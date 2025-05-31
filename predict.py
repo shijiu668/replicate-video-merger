@@ -20,8 +20,8 @@ class Predictor(BasePredictor):
         # 创建输出文件路径
         output_path = f"/tmp/output.{output_format}"
         
-        # 如果有字幕文件，预处理确保编码正确
-        processed_subtitle_file = subtitle_file
+        # 预处理字幕文件（如果存在）
+        processed_subtitle_file = None
         if subtitle_file:
             try:
                 # 检测字幕文件编码
@@ -45,23 +45,7 @@ class Predictor(BasePredictor):
             except Exception as e:
                 print(f"字幕文件处理警告: {e}")
                 # 如果处理失败，使用原文件
-                processed_subtitle_file = subtitle_file
-
-class Predictor(BasePredictor):
-    def predict(
-        self,
-        video_file: Path = Input(description="输入视频文件"),
-        audio_file: Path = Input(description="输入音频文件", default=None),
-        subtitle_file: Path = Input(description="字幕文件 (.srt)", default=None),
-        output_format: str = Input(
-            description="输出格式", 
-            choices=["mp4", "mov", "avi"], 
-            default="mp4"
-        ),
-    ) -> Path:
-        
-        # 创建输出文件路径
-        output_path = f"/tmp/output.{output_format}"
+                processed_subtitle_file = str(subtitle_file)
         
         # 构建FFmpeg命令
         cmd = ["ffmpeg", "-y"]  # -y 覆盖输出文件
@@ -78,7 +62,7 @@ class Predictor(BasePredictor):
             cmd.extend(["-i", str(subtitle_file)])
         
         # 根据不同情况构建命令
-        if subtitle_file and processed_subtitle_file:
+        if processed_subtitle_file:
             # 有字幕：需要重新编码视频以烧录字幕
             # 使用更安全的字幕滤镜，设置字体样式
             subtitle_filter = f"subtitles='{processed_subtitle_file}':force_style='FontSize=24,PrimaryColour=&Hffffff&,OutlineColour=&H000000&,Outline=2,FontName=Arial'"
