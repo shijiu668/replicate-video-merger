@@ -78,7 +78,7 @@ class Predictor(BasePredictor):
             cmd.extend(["-i", str(subtitle_file)])
         
         # 根据不同情况构建命令
-        if processed_subtitle_file:
+        if subtitle_file and processed_subtitle_file:
             # 有字幕：需要重新编码视频以烧录字幕
             # 使用更安全的字幕滤镜，设置字体样式
             subtitle_filter = f"subtitles='{processed_subtitle_file}':force_style='FontSize=24,PrimaryColour=&Hffffff&,OutlineColour=&H000000&,Outline=2,FontName=Arial'"
