@@ -33,30 +33,32 @@ class Predictor(BasePredictor):
         if subtitle_file:
             cmd.extend(["-i", str(subtitle_file)])
         
-        # 构建过滤器
-        filter_parts = []
-        input_count = 1
-        
-        # 如果有音频文件，替换原音轨
-        if audio_file:
+        # 根据不同情况构建命令
+        if subtitle_file:
+            # 有字幕：需要重新编码视频以烧录字幕
+            cmd.extend(["-vf", f"subtitles={subtitle_file}"])
+            cmd.extend(["-c:v", "libx264"])  # 重新编码视频
+            cmd.extend(["-preset", "medium"])  # 编码速度预设
+            cmd.extend(["-crf", "23"])  # 质量设置
+            
+            if audio_file:
+                # 有音频：使用新音频
+                cmd.extend(["-c:a", "aac"])
+                cmd.extend(["-map", "0:v:0"])  # 视频来自输入0
+                cmd.extend(["-map", "1:a:0"])  # 音频来自输入1
+            else:
+                # 无音频：保持原音频
+                cmd.extend(["-c:a", "copy"])
+                
+        elif audio_file:
+            # 只有音频，无字幕：替换音轨
             cmd.extend(["-c:v", "copy"])  # 复制视频流
             cmd.extend(["-c:a", "aac"])   # 重新编码音频
             cmd.extend(["-map", "0:v:0"]) # 使用第一个输入的视频
             cmd.extend(["-map", "1:a:0"]) # 使用第二个输入的音频
-            input_count = 2
-        
-        # 如果有字幕文件，烧录字幕
-        if subtitle_file:
-            if audio_file:
-                # 有音频的情况：video + audio + subtitle
-                cmd.extend(["-vf", f"subtitles={subtitle_file}"])
-            else:
-                # 只有字幕的情况：video + subtitle
-                cmd.extend(["-vf", f"subtitles={subtitle_file}"])
-                cmd.extend(["-c:a", "copy"])  # 保持原音频
-        
-        # 如果都没有额外文件，直接复制
-        if not audio_file and not subtitle_file:
+            
+        else:
+            # 既无音频也无字幕：直接复制
             cmd.extend(["-c", "copy"])
         
         # 添加输出路径
@@ -70,11 +72,14 @@ class Predictor(BasePredictor):
                 cmd, 
                 capture_output=True, 
                 text=True, 
-                check=True
+                check=True,
+                timeout=300  # 5分钟超时
             )
             print(f"FFmpeg输出: {result.stdout}")
         except subprocess.CalledProcessError as e:
             print(f"FFmpeg错误: {e.stderr}")
             raise Exception(f"视频处理失败: {e.stderr}")
+        except subprocess.TimeoutExpired:
+            raise Exception("视频处理超时，请检查文件大小")
         
         return Path(output_path)
