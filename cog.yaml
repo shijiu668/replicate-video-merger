@@ -2,8 +2,10 @@ build:
   gpu: false
   system_packages:
     - ffmpeg
+    - fonts-dejavu-core
   python_version: "3.11"
   python_packages:
     - torch==2.0.1
+    - chardet
 
 predict: "predict.py:Predictor"
